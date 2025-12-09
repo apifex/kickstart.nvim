@@ -179,15 +179,8 @@ vim.o.expandtab = true -- Convert tabs to spaces
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Save file shortcut (works exactly like :w with autoformat)
-vim.keymap.set('n', '<C-s>', ':w<CR>', { desc = 'Save file', silent = true })
-vim.keymap.set('i', '<C-s>', '<Esc>:w<CR>a', { desc = 'Save file from insert mode', silent = true })
-
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror' })
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -366,8 +359,6 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-        { '<leader>c', group = '[C]ode' },
-        { '<leader>o', group = '[O]rganize' },
       },
     },
   },
@@ -563,19 +554,6 @@ require('lazy').setup({
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
-          
-          -- Add import for symbol under cursor (alternative keybind)
-          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-          
-          -- Organize imports
-          map('<leader>oi', function()
-            vim.lsp.buf.code_action({
-              apply = true,
-              context = {
-                only = { 'source.organizeImports' },
-              },
-            })
-          end, '[O]rganize [I]mports')
 
           -- Find references for the word under your cursor.
           map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
@@ -664,7 +642,7 @@ require('lazy').setup({
       -- See :help vim.diagnostic.Opts
       vim.diagnostic.config {
         severity_sort = true,
-        float = { border = 'rounded', source = 'if_many', wrap = true, max_width = 80 },
+        float = { border = 'rounded', source = 'if_many' },
         underline = { severity = vim.diagnostic.severity.ERROR },
         signs = vim.g.have_nerd_font and {
           text = {
@@ -678,13 +656,13 @@ require('lazy').setup({
           source = 'if_many',
           spacing = 2,
           format = function(diagnostic)
-            local max_width = 80
-            local message = diagnostic.message
-            -- Truncate message if it's too long
-            if #message > max_width then
-              message = message:sub(1, max_width - 3) .. '...'
-            end
-            return message
+            local diagnostic_message = {
+              [vim.diagnostic.severity.ERROR] = diagnostic.message,
+              [vim.diagnostic.severity.WARN] = diagnostic.message,
+              [vim.diagnostic.severity.INFO] = diagnostic.message,
+              [vim.diagnostic.severity.HINT] = diagnostic.message,
+            }
+            return diagnostic_message[diagnostic.severity]
           end,
         },
       }
@@ -706,7 +684,7 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         -- clangd = {},
-        gopls = {},
+        -- gopls = {},
         -- pyright = {},
         rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -715,29 +693,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        ts_ls = {
-          settings = {
-            typescript = {
-              inlayHints = {
-                includeInlayParameterNameHints = 'all',
-                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-                includeInlayFunctionParameterTypeHints = true,
-                includeInlayVariableTypeHints = true,
-                includeInlayPropertyDeclarationTypeHints = true,
-                includeInlayFunctionLikeReturnTypeHints = true,
-                includeInlayEnumMemberValueHints = true,
-              },
-              suggest = {
-                includeCompletions = true,
-              },
-            },
-            javascript = {
-              suggest = {
-                includeCompletions = true,
-              },
-            },
-          },
-        },
+        ts_ls = {},
         --
 
         lua_ls = {
@@ -824,7 +780,6 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        go = { 'goimports', 'gofmt' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -911,13 +866,6 @@ require('lazy').setup({
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
-        
-        -- Show source in completion menu (helps see where imports come from)
-        menu = {
-          draw = {
-            columns = { { 'label', 'label_description', gap = 1 }, { 'kind_icon', 'kind', gap = 1 }, { 'source_name' } },
-          },
-        },
       },
 
       sources = {
